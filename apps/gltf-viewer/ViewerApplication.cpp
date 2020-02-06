@@ -111,8 +111,8 @@ int ViewerApplication::run(){
         glUniform3f(uLightningIntensity, lightIntensity[0], lightIntensity[1], lightIntensity[2]);
     }
     if(uLightningDirectional >= 0){
-        glm::normalize(glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));
-        glUniform3f(uLightningDirectional, lightDirection[0], lightDirection[1], lightDirection[2]);
+        const auto lightDirect = glm::normalize(glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));
+        glUniform3f(uLightningDirectional, lightDirect[0], lightDirect[1], lightDirect[2]);
     }
 
     // The recursive function that should draw a node
@@ -231,6 +231,26 @@ int ViewerApplication::run(){
             cameraController->setCamera(current);
         }
 
+      }
+      if(ImGui::CollapsingHeader("light", ImGuiTreeNodeFlags_DefaultOpen)){
+          static auto lightTheta = 0.f;
+          static auto lightPhi = 0.f;
+
+          if(ImGui::SliderFloat("theta", &lightTheta, 0, glm::pi<float>()) ||
+             ImGui::SliderFloat("phi", &lightPhi, 0, 2.f * glm::pi<float>())) {
+              const auto sinPhi = glm::sin(lightPhi);
+              const auto cosPhi = glm::cos(lightPhi);
+              const auto sinTheta = glm::sin(lightTheta);
+              const auto cosTheta = glm::cos(lightTheta);
+              lightDirection = glm::vec3(sinTheta * cosPhi, cosTheta, sinTheta * sinPhi);
+          }
+          static glm::vec3 lightColor(1.f);
+          static auto lightIntensityFactor = 1.f;
+
+          if (ImGui::ColorEdit3("color", (float *)&lightColor) ||
+              ImGui::InputFloat("intensity", &lightIntensityFactor)) {
+              lightIntensity = lightColor * lightIntensityFactor;
+          }
       }
       ImGui::End();
     }
