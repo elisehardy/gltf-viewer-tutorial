@@ -81,6 +81,7 @@ int ViewerApplication::run(){
 
   glm::vec3 lightDirection(1);
   glm::vec3 lightIntensity(1);
+  bool lightFromCamera =  false;
 
 /*
   tinygltf::Model model;
@@ -110,9 +111,14 @@ int ViewerApplication::run(){
     if(uLightningIntensity >=0 ){
         glUniform3f(uLightningIntensity, lightIntensity[0], lightIntensity[1], lightIntensity[2]);
     }
-    if(uLightningDirectional >= 0){
-        const auto lightDirect = glm::normalize(glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));
-        glUniform3f(uLightningDirectional, lightDirect[0], lightDirect[1], lightDirect[2]);
+    if(uLightningDirectional >=0) {
+        if (lightFromCamera) {
+            glUniform3f(uLightningDirectional, 0, 0, 1);
+        } else {
+            const auto lightDirect = glm::normalize(
+                    glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));
+            glUniform3f(uLightningDirectional, lightDirect[0], lightDirect[1], lightDirect[2]);
+        }
     }
 
     // The recursive function that should draw a node
@@ -251,6 +257,7 @@ int ViewerApplication::run(){
               ImGui::InputFloat("intensity", &lightIntensityFactor)) {
               lightIntensity = lightColor * lightIntensityFactor;
           }
+          ImGui::Checkbox("light from camera", &lightFromCamera);
       }
       ImGui::End();
     }
