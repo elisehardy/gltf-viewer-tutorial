@@ -55,9 +55,13 @@ int ViewerApplication::run(){
   // "" Implement a new CameraController model and use it instead. Propose the
   // choice from the GUI
   //FirstPersonCameraController cameraController{m_GLFWHandle.window(), 0.5f * maxDistance};
-  TrackballCameraController cameraController{m_GLFWHandle.window(), 0.5f * maxDistance};
+  //TrackballCameraController cameraController{m_GLFWHandle.window(), 0.5f * maxDistance};
+
+  std::unique_ptr<CameraController> cameraController = std::make_unique<TrackballCameraController>(
+          m_GLFWHandle.window(), 0.5f * maxDistance);
+
   if (m_hasUserCamera) {
-    cameraController.setCamera(m_userCamera);
+    cameraController->setCamera(m_userCamera);
   } else {
     // "" Use scene bounds to compute a better default camera
     //cameraController.setCamera(
@@ -67,7 +71,7 @@ int ViewerApplication::run(){
       const auto up = glm::vec3(0, 1, 0);
       const auto eye =
               diag.z > 0 ? center + diag : center + 2.f * glm::cross(diag, up);
-      cameraController.setCamera(Camera{eye, center, up});
+      cameraController->setCamera(Camera{eye, center, up});
 
   }
 /*
@@ -148,7 +152,7 @@ int ViewerApplication::run(){
         const auto nbComponent = 3;
         std::vector<unsigned char> pixels(m_nWindowWidth * m_nWindowHeight * nbComponent);
         renderToImage(m_nWindowWidth, m_nWindowHeight, nbComponent, pixels.data(), [&]() {
-            drawScene(cameraController.getCamera());
+            drawScene(cameraController->getCamera());
         });
         flipImageYAxis(m_nWindowWidth, m_nWindowHeight, nbComponent, pixels.data());
 
@@ -165,7 +169,7 @@ int ViewerApplication::run(){
        ++iterationCount) {
     const auto seconds = glfwGetTime();
 
-    const auto camera = cameraController.getCamera();
+    const auto camera = cameraController->getCamera();
     drawScene(camera);
 
     // GUI code:
@@ -197,6 +201,20 @@ int ViewerApplication::run(){
           const auto str = ss.str();
           glfwSetClipboardString(m_GLFWHandle.window(), str.c_str());
         }
+
+        static int type = 0;
+        const auto change = ImGui::RadioButton("Trackball", &type, 0) ||
+                ImGui::RadioButton("First Person", &type, 1);
+        if (change){
+            const auto current = cameraController->getCamera();
+            if(!type){
+                cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), 0.5f * maxDistance);
+            } else {
+                cameraController = std::make_unique<FirstPersonCameraController>(m_GLFWHandle.window(), 0.5f * maxDistance);
+            }
+            cameraController->setCamera(current);
+        }
+
       }
       ImGui::End();
     }
@@ -209,7 +227,7 @@ int ViewerApplication::run(){
     auto guiHasFocus =
         ImGui::GetIO().WantCaptureMouse || ImGui::GetIO().WantCaptureKeyboard;
     if (!guiHasFocus) {
-      cameraController.update(float(ellapsedTime));
+      cameraController->update(float(ellapsedTime));
     }
 
     m_GLFWHandle.swapBuffers(); // Swap front and back buffers
