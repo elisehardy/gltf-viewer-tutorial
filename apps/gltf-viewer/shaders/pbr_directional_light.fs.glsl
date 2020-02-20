@@ -43,5 +43,5 @@ void main()
     float NdotL = clamp(dot(N, L), 0.0, 1.0);
     vec3 diffuse = baseColorFromTexture.rgb * M_1_PI * NdotL;
 
-    fColor = LINEARtoSRGB(diffuse);
+    fColor = LINEARtoSRGB(diffuse*uLightIntensity);
 }

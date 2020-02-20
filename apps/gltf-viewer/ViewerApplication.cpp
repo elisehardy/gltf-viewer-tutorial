@@ -35,8 +35,8 @@ int ViewerApplication::run(){
   const auto normalMatrixLocation =
       glGetUniformLocation(glslProgram.glId(), "uNormalMatrix");
 
-  const auto uLightningDirectional = glGetUniformLocation(glslProgram.glId(), "uLightDir");
-  const auto uLightningIntensity = glGetUniformLocation(glslProgram.glId(), "uLightInt");
+  const auto uLightningDirectional = glGetUniformLocation(glslProgram.glId(), "uLightDirection");
+  const auto uLightningIntensity = glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
 
   const auto uBaseColorTexture = glGetUniformLocation(glslProgram.glId(), "uBaseColorTexture");
 
@@ -107,7 +107,7 @@ int ViewerApplication::run(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
-    //glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
 
     // "" Creation of Buffer Objects
@@ -135,9 +135,8 @@ int ViewerApplication::run(){
                         textureObject = textureObjects[pbrMetallicRoughness.baseColorTexture.index];
                     }
                 }
-                std::cout << materialIndex << std::endl;
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, whiteTexture);
+                glBindTexture(GL_TEXTURE_2D, textureObject);
                 glUniform1i(uBaseColorTexture, 0);
             }
         } else{
