@@ -40,7 +40,7 @@ void main()
     vec3 L = uLightDirection;
 
     vec4 baseColorFromTexture = SRGBtoLINEAR(texture(uBaseColorTexture, vTexCoords));
-    float NdotL = clamp(dot(N, L), 0, 1);
+    float NdotL = clamp(dot(N, L), 0.0, 1.0);
     vec3 diffuse = baseColorFromTexture.rgb * M_1_PI * NdotL;
 
     fColor = LINEARtoSRGB(diffuse);

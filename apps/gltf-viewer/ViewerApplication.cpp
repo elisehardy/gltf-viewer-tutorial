@@ -38,6 +38,7 @@ int ViewerApplication::run(){
   const auto uLightningDirectional = glGetUniformLocation(glslProgram.glId(), "uLightDir");
   const auto uLightningIntensity = glGetUniformLocation(glslProgram.glId(), "uLightInt");
 
+  const auto uBaseColorTexture = glGetUniformLocation(glslProgram.glId(), "uBaseColorTexture");
 
     tinygltf::Model model;
     if (!loadGltfFile(model)) {
@@ -94,7 +95,7 @@ int ViewerApplication::run(){
     /*creation texture objects*/
     const auto textureObjects = createTextureObjects(model);
     const float white[] = {1, 1, 1, 1};
-    GLuint whiteTexture;
+    GLuint whiteTexture = 0;
     glGenTextures(1, &whiteTexture);
 
     glBindTexture(GL_TEXTURE_2D, whiteTexture);
@@ -106,7 +107,7 @@ int ViewerApplication::run(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    //glBindTexture(GL_TEXTURE_2D, 0);
 
 
     // "" Creation of Buffer Objects
@@ -119,6 +120,33 @@ int ViewerApplication::run(){
     // Setup OpenGL state for rendering
   glEnable(GL_DEPTH_TEST);
   glslProgram.use();
+
+  // lambda function to bind material
+    const auto bindMaterial = [&](const auto materialIndex) {
+        // Material binding
+        if(materialIndex >= 0 ){
+            const auto &material = model.materials[materialIndex];
+            const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
+            if(uBaseColorTexture >= 0 ){
+                auto textureObject = whiteTexture;
+                if(pbrMetallicRoughness.baseColorTexture.index >= 0 ){
+                    const auto &texture = model.textures[pbrMetallicRoughness.baseColorTexture.index];
+                    if (texture.source >= 0) {
+                        textureObject = textureObjects[pbrMetallicRoughness.baseColorTexture.index];
+                    }
+                }
+                std::cout << materialIndex << std::endl;
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, whiteTexture);
+                glUniform1i(uBaseColorTexture, 0);
+            }
+        } else{
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, whiteTexture);
+                glUniform1i(uBaseColorTexture, 0);
+
+        }
+    };
 
   // Lambda function to draw the scene
   const auto drawScene = [&](const Camera &camera) {
@@ -162,6 +190,8 @@ int ViewerApplication::run(){
                 for (int i = 0; i < mesh.primitives.size(); ++i) {
                     const auto vao = vertexArrayObjects[vaoRange.begin + i];
                     const auto &primitive = mesh.primitives[i];
+
+                    bindMaterial(primitive.material);
                     glBindVertexArray(vao);
 
                     if (primitive.indices >= 0) {
@@ -442,7 +472,8 @@ std::vector<GLuint> ViewerApplication::createTextureObjects(const tinygltf::Mode
 
 
     int size = model.textures.size();
-    std::vector<GLuint> textureObjects(size);
+    std::vector<GLuint> textureObjects(size, 0);
+    glActiveTexture(GL_TEXTURE0);
     glGenTextures(size, textureObjects.data());
 
     for(int i = 0; i < size; i++) {
