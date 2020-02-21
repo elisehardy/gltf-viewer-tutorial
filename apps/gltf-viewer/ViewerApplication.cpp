@@ -39,6 +39,12 @@ int ViewerApplication::run(){
   const auto uLightningIntensity = glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
 
   const auto uBaseColorTexture = glGetUniformLocation(glslProgram.glId(), "uBaseColorTexture");
+  const auto uBaseColorFactor = glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
+  const auto uMetallicRoughnessTexture = glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");
+  const auto uMetallicFactor = glGetUniformLocation(glslProgram.glId(), "uMetallicFactor");
+  const auto uRoughnessFactor = glGetUniformLocation(glslProgram.glId(), "uRoughnessFactor");
+
+
 
     tinygltf::Model model;
     if (!loadGltfFile(model)) {
@@ -132,17 +138,59 @@ int ViewerApplication::run(){
                 if(pbrMetallicRoughness.baseColorTexture.index >= 0 ){
                     const auto &texture = model.textures[pbrMetallicRoughness.baseColorTexture.index];
                     if (texture.source >= 0) {
-                        textureObject = textureObjects[pbrMetallicRoughness.baseColorTexture.index];
+                        textureObject = textureObjects[texture.source];
                     }
                 }
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureObject);
                 glUniform1i(uBaseColorTexture, 0);
             }
+            if(uBaseColorFactor >= 0){
+                glUniform4f(uBaseColorFactor,
+                            (float)pbrMetallicRoughness.baseColorFactor[0],
+                            (float)pbrMetallicRoughness.baseColorFactor[1],
+                            (float)pbrMetallicRoughness.baseColorFactor[2],
+                            (float)pbrMetallicRoughness.baseColorFactor[3]);
+            }
+            if(uMetallicRoughnessTexture >= 0){
+                auto textureObject = 0;
+                if(pbrMetallicRoughness.metallicRoughnessTexture.index >= 0 ){
+                    const auto &texture = model.textures[pbrMetallicRoughness.metallicRoughnessTexture.index];
+                    if (texture.source >= 0) {
+                        textureObject = textureObjects[texture.source];
+                    }
+                }
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, textureObject);
+                glUniform1i(uMetallicRoughnessTexture, 1);
+            }
+            if(uMetallicFactor >= 0){
+                glUniform1f(uMetallicFactor, (float)pbrMetallicRoughness.metallicFactor);
+            }
+            if(uRoughnessFactor >= 0){
+                glUniform1f(uRoughnessFactor, (float)pbrMetallicRoughness.roughnessFactor);
+            }
+
         } else{
+            if(uBaseColorTexture >= 0 ) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, whiteTexture);
                 glUniform1i(uBaseColorTexture, 0);
+            }
+            if(uBaseColorFactor >= 0 ){
+                glUniform4f(uBaseColorFactor, 1,1,1,1);
+            }
+            if(uMetallicRoughnessTexture >= 0){
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUniform1i(uMetallicRoughnessTexture, 0);
+            }
+            if(uMetallicFactor >= 0){
+                glUniform1f(uMetallicFactor, 1.f);
+            }
+            if(uRoughnessFactor >= 0){
+                glUniform1f(uRoughnessFactor, 1.f);
+            }
 
         }
     };
