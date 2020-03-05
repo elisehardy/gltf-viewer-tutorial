@@ -58,7 +58,7 @@ void main()
     vec4 baseColor = baseColorFromTexture * uBaseColorFactor;
     vec4 metallicRougnessFromTexture = texture(uMetallicRoughnessTexture, vTexCoords);
 
-    vec4 emissiveFromTexture = texture(uEmissiveTexture, vTexCoords);
+    vec4 emissiveFromTexture = SRGBtoLINEAR(texture(uEmissiveTexture, vTexCoords));
     vec3 emissive = uEmissiveFactor * emissiveFromTexture.rgb;
 
     float roughness = uRoughnessFactor * metallicRougnessFromTexture.g;
@@ -103,5 +103,5 @@ void main()
     vec3 f_specular =  F * Vis * D;
     vec3 f = f_diffuse + f_specular;
 
-    fColor = LINEARtoSRGB((f_diffuse + f_specular)*uLightIntensity * NdotL)+emissive;
+    fColor = LINEARtoSRGB((f_diffuse + f_specular)*uLightIntensity * NdotL +emissive) ;
 }
