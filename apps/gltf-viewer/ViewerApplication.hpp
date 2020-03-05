@@ -33,6 +33,11 @@ private:
   GLsizei m_nWindowWidth = 1280;
   GLsizei m_nWindowHeight = 720;
 
+  GLuint m_directionalSMTexture;
+  GLuint m_directionalSMFBO;
+  GLuint m_directionalSMSampler;
+  int32_t m_nDirectionalSMResolution = 512;
+
   const fs::path m_AppPath;
   const std::string m_AppName;
   const fs::path m_ShadersRootPath;

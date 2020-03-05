@@ -635,6 +635,8 @@ ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
   if (!fragmentShader.empty()) {
     m_fragmentShader = fragmentShader;
   }
+    glGenTextures(1, &whiteTexture);
+    glBindTexture(GL_TEXTURE_2D, whiteTexture);
 
   ImGui::GetIO().IniFilename =
       m_ImGuiIniFilename.c_str(); // At exit, ImGUI will store its windows
