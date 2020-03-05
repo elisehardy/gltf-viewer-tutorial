@@ -43,8 +43,8 @@ int ViewerApplication::run(){
   const auto uMetallicRoughnessTexture = glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");
   const auto uMetallicFactor = glGetUniformLocation(glslProgram.glId(), "uMetallicFactor");
   const auto uRoughnessFactor = glGetUniformLocation(glslProgram.glId(), "uRoughnessFactor");
-
-
+  const auto uEmissiveFactor = glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
+  const auto uEmissiveTexture = glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");
 
     tinygltf::Model model;
     if (!loadGltfFile(model)) {
@@ -133,6 +133,8 @@ int ViewerApplication::run(){
         if(materialIndex >= 0 ){
             const auto &material = model.materials[materialIndex];
             const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
+            const auto &emissiveFactor = material.emissiveFactor;
+            const auto &emissiveTexture = material.emissiveTexture;
             if(uBaseColorTexture >= 0 ){
                 auto textureObject = whiteTexture;
                 if(pbrMetallicRoughness.baseColorTexture.index >= 0 ){
@@ -170,6 +172,22 @@ int ViewerApplication::run(){
             if(uRoughnessFactor >= 0){
                 glUniform1f(uRoughnessFactor, (float)pbrMetallicRoughness.roughnessFactor);
             }
+            if(uEmissiveTexture >= 0){
+                auto textureObject = 0;
+                if(emissiveTexture.index >= 0 ){
+                    const auto &texture = model.textures[emissiveTexture.index];
+                    if (texture.source >= 0) {
+                        textureObject = textureObjects[texture.source];
+                    }
+                }
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, textureObject);
+                glUniform1i(uEmissiveTexture, 2);
+            }
+            if(uEmissiveFactor >=0){
+                glUniform3f(uEmissiveFactor, emissiveFactor[0], emissiveFactor[1], emissiveFactor[2]);
+            }
+
 
         } else{
             if(uBaseColorTexture >= 0 ) {
@@ -190,6 +208,14 @@ int ViewerApplication::run(){
             }
             if(uRoughnessFactor >= 0){
                 glUniform1f(uRoughnessFactor, 1.f);
+            }
+            if(uEmissiveTexture >=0){
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUniform1i(uEmissiveTexture, 0);
+            }
+            if(uEmissiveFactor >=0){
+                glUniform3f(uEmissiveFactor, 1,1,1);
             }
 
         }
