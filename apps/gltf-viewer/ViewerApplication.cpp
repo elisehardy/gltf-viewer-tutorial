@@ -48,6 +48,9 @@ int ViewerApplication::run(){
   const auto uOcclusionTexture = glGetUniformLocation(glslProgram.glId(), "uOcclusionTexture");
   const auto uOcclusionStrenght = glGetUniformLocation(glslProgram.glId(), "uOcclusionStrenght");
 
+  m_directionalSMProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "directionalSM.vs.glsl", m_ShadersRootPath / m_AppName / "directionalSM.fs.glsl" });
+  m_uDirLightViewProjMatrix = glGetUniformLocation(m_directionalSMProgram.glId(), "uDirLightViewProjMatrix");
+
 
     tinygltf::Model model;
     if (!loadGltfFile(model)) {
@@ -118,13 +121,39 @@ int ViewerApplication::run(){
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-
     // "" Creation of Buffer Objects
   const auto bufferObjects = creatBufferObjects(model);
 
   // "" Creation of Vertex Array Objects
     std::vector<VaoRange> meshToVertexArrays;
     const auto vertexArrayObjects = createVertexArrayObjects(model, bufferObjects, meshToVertexArrays);
+
+
+    /*creation shadow*/
+    glGenTextures(1, &m_directionalSMTexture);
+
+    glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, m_nDirectionalSMResolution, m_nDirectionalSMResolution);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &m_directionalSMFBO);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_directionalSMFBO);
+    glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_directionalSMTexture, 0);
+    const auto checkFrameBuffer = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    if (checkFrameBuffer != GL_FRAMEBUFFER_COMPLETE){
+        throw std::runtime_error("shadow framebuffer.");
+    }
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glGenSamplers(1, &m_directionalSMSampler);
+    glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    //
+
+
 
     // Setup OpenGL state for rendering
   glEnable(GL_DEPTH_TEST);
@@ -635,8 +664,8 @@ ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
   if (!fragmentShader.empty()) {
     m_fragmentShader = fragmentShader;
   }
-    glGenTextures(1, &whiteTexture);
-    glBindTexture(GL_TEXTURE_2D, whiteTexture);
+    //glGenTextures(1, &whiteTexture);
+    //glBindTexture(GL_TEXTURE_2D, whiteTexture);
 
   ImGui::GetIO().IniFilename =
       m_ImGuiIniFilename.c_str(); // At exit, ImGUI will store its windows

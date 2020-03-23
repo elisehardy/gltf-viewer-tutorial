@@ -33,10 +33,16 @@ private:
   GLsizei m_nWindowWidth = 1280;
   GLsizei m_nWindowHeight = 720;
 
-  GLuint m_directionalSMTexture;
-  GLuint m_directionalSMFBO;
-  GLuint m_directionalSMSampler;
-  int32_t m_nDirectionalSMResolution = 512;
+  //shadow map
+    GLuint m_directionalSMTexture;
+    GLuint m_directionalSMFBO;
+    GLuint m_directionalSMSampler;
+    int32_t m_nDirectionalSMResolution = 512;
+    glmlv::GLProgram m_directionalSMProgram;
+    GLint m_uDirLightViewProjMatrix;
+
+
+    //
 
   const fs::path m_AppPath;
   const std::string m_AppName;
