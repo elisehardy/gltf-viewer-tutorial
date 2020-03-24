@@ -51,6 +51,7 @@ int ViewerApplication::run(){
   m_directionalSMProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "directionalSM.vs.glsl", m_ShadersRootPath / m_AppName / "directionalSM.fs.glsl" });
   m_uDirLightViewProjMatrix = glGetUniformLocation(m_directionalSMProgram.glId(), "uDirLightViewProjMatrix");
 
+  bool directionalSMDirty = true;
 
     tinygltf::Model model;
     if (!loadGltfFile(model)) {
@@ -371,7 +372,46 @@ int ViewerApplication::run(){
     const auto seconds = glfwGetTime();
 
     const auto camera = cameraController->getCamera();
+    static const auto computeDirectionVectorUp = [](float phiRadians, float thetaRadians){
+          const auto cosPhi = glm::cos(phiRadians);
+          const auto sinPhi = glm::sin(phiRadians);
+          const auto cosTheta = glm::cos(thetaRadians);
+          return -glm::normalize(glm::vec3(sinPhi * cosTheta, -glm::sin(thetaRadians), cosPhi * cosTheta));
+    };
+
+    const auto sceneCenter = 0.5f * (m_BBoxMin + m_BBoxMax);
+    const float sceneRadius = m_SceneSizeLength * 0.5f;
+
+    const auto dirLightUpVector = computeDirectionVectorUp(glm::radians(m_DirLightPhiAngleDegrees), glm::radians(m_DirLightThetaAngleDegrees));
+    const auto dirLightViewMatrix = glm::lookAt(sceneCenter + m_DirLightDirection * sceneRadius, sceneCenter, dirLightUpVector); // Will not work if m_DirLightDirection is colinear to lightUpVector
+    const auto dirLightProjMatrix = glm::ortho(-sceneRadius, sceneRadius, -sceneRadius, sceneRadius, 0.01f * sceneRadius, 2.f * sceneRadius);
+
     drawScene(camera);
+
+
+    /*shadow*/
+    if(directionalSMDirty){
+
+        m_directionalSMProgram.use();
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_directionalSMFBO);
+        glViewport(0, 0, m_nDirectionalSMResolution, m_nDirectionalSMResolution);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUniformMatrix4fv(m_uDirLightViewProjMatrix, 1, GL_FALSE, glm::value_ptr(dirLightProjMatrix * dirLightViewMatrix));
+
+        glBindVertexArray(m_SceneVAO);
+
+        // We draw each shape by specifying how much indices it carries, and with an offset in the global index buffer
+        for (const auto shape : m_shapes) {
+            glDrawElements(GL_TRIANGLES, shape.indexCount, GL_UNSIGNED_INT, (const GLvoid*)(shape.indexOffset * sizeof(GLuint)));
+        }
+
+        glBindVertexArray(0);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        directionalSMDirty = false;
+    }
+
 
     // GUI code:
     imguiNewFrame();
@@ -420,6 +460,10 @@ int ViewerApplication::run(){
       if(ImGui::CollapsingHeader("light", ImGuiTreeNodeFlags_DefaultOpen)){
           static auto lightTheta = 0.f;
           static auto lightPhi = 0.f;
+
+          if(directional_light_change){
+              directionalSMDirty = true;
+          }
 
           if(ImGui::SliderFloat("theta", &lightTheta, 0, glm::pi<float>()) ||
              ImGui::SliderFloat("phi", &lightPhi, 0, 2.f * glm::pi<float>())) {
