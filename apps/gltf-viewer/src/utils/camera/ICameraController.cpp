@@ -32,7 +32,7 @@ namespace utils::camera {
     glm::dvec2 ICameraController::computeCursorDelta() {
         glm::dvec2 cursorPosition;
         glfwGetCursorPos(this->window, &cursorPosition.x, &cursorPosition.y);
-        const glm::dvec2  delta = cursorPosition - this->lastCursorPosition;
+        const glm::dvec2 delta = cursorPosition - this->lastCursorPosition;
         this->lastCursorPosition = cursorPosition;
         return delta;
     }
