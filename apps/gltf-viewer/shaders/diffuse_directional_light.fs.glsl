@@ -4,15 +4,12 @@ in vec3 vViewSpacePosition;
 in vec3 vViewSpaceNormal;
 in vec2 vTexCoords;
 
-uniform vec3 uLightDir;
-uniform vec3 uLightInt;
+uniform float uDirLightIntensity;
+uniform vec3 uLightDirection;
+uniform vec3 uLightColor;
 
 out vec3 fColor;
 
-void main()
-{
-    // Need another normalization because interpolation of vertex attributes does not maintain unit length
-    vec3 viewSpaceNormal = normalize(vViewSpaceNormal);
-    float piDiv = 1. / 3.14;
-    fColor = vec3(piDiv) * uLightInt * dot(viewSpaceNormal, uLightDir);
+void main() {
+    fColor= vec3(1. / 3.14) * uDirLightIntensity * uLightColor * dot(normalize(vViewSpaceNormal), uLightDirection);
 }

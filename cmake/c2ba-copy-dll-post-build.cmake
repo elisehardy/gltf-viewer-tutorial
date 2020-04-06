@@ -19,15 +19,15 @@
 # THE SOFTWARE.
 
 # For MSVC solutions, add a custom command to copy a list of dll files next to the executables after the build
-macro(c2ba_copy_dll_post_build EXECUTABLE_FILE DLL_FILES)
-    if(MSVC)
-        foreach(DLL_FILE ${DLL_FILES})
-                add_custom_command(
-                    TARGET ${EXECUTABLE_FILE}
-                    POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy ${DLL_FILE} ${EXECUTABLE_OUTPUT_PATH}/\$\(Configuration\)
-                    COMMENT "copying dll ${DLL_FILE}"
-                )
-        endforeach()
-    endif()
-endmacro()
+MACRO(C2BA_COPY_DLL_POST_BUILD EXECUTABLE_FILE DLL_FILES)
+    IF (MSVC)
+        FOREACH (DLL_FILE ${DLL_FILES})
+            ADD_CUSTOM_COMMAND(
+                TARGET ${EXECUTABLE_FILE}
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy ${DLL_FILE} ${EXECUTABLE_OUTPUT_PATH}/\$\(Configuration\)
+                COMMENT "copying dll ${DLL_FILE}"
+            )
+        ENDFOREACH ()
+    ENDIF ()
+ENDMACRO()

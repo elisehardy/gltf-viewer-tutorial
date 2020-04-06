@@ -3,21 +3,27 @@
 in vec3 vViewSpacePosition;
 in vec3 vViewSpaceNormal;
 in vec2 vTexCoords;
+in vec4 vPosLightSpace;
 
+uniform float uDirLightIntensity;
+uniform float uAmbLightIntensity;
 uniform vec3 uLightDirection;
-uniform vec3 uLightIntensity;
-uniform vec4 uBaseColorFactor;
+uniform vec3 uLightColor;
 
+uniform mat4 uDirLightViewProjMatrix;
+uniform sampler2D uDirLightShadowMap;
+uniform float uDirLightShadowMapBias;
+
+uniform vec3 uEmissiveFactor;
+uniform float uMetallicFactor;
+uniform float uRoughnessFactor;
+uniform vec4 uBaseColorFactor;
 uniform sampler2D uBaseColorTexture;
 uniform sampler2D uMetallicRoughnessTexture;
 uniform sampler2D uEmissiveTexture;
+
 uniform sampler2D uOcclusionTexture;
-
-uniform float uMetallicFactor;
-uniform float uRoughnessFactor;
-
-uniform vec3 uEmissiveFactor;
-uniform float uOcclusionStrenght;
+uniform float uOcclusionStrength;
 
 out vec3 fColor;
 
@@ -26,8 +32,6 @@ const float GAMMA = 2.2;
 const float INV_GAMMA = 1. / GAMMA;
 const float M_PI = 3.141592653589793;
 const float M_1_PI = 1.0 / M_PI;
-
-
 const vec3 dielectricSpecular = vec3(0.04, 0.04, 0.04);
 const vec3 black = vec3(0, 0, 0);
 
@@ -37,37 +41,38 @@ const vec3 black = vec3(0, 0, 0);
 
 // linear to sRGB approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
-vec3 LINEARtoSRGB(vec3 color)
-{
+vec3 LINEARtoSRGB(vec3 color) {
     return pow(color, vec3(INV_GAMMA));
 }
 
 // sRGB to linear approximation
 // see http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
-vec4 SRGBtoLINEAR(vec4 srgbIn)
-{
+vec4 SRGBtoLINEAR(vec4 srgbIn) {
     return vec4(pow(srgbIn.xyz, vec3(GAMMA)), srgbIn.w);
 }
 
-void main()
-{
+float computeShadow() {
+    vec4 positionInDirLightScreen = uDirLightViewProjMatrix * vec4(vViewSpacePosition, 1);
+    vec3 positionInDirLightNDC = vec3(positionInDirLightScreen / positionInDirLightScreen.w) * 0.5 + 0.5;
+    float depthBlockerInDirSpace = texture(uDirLightShadowMap, positionInDirLightNDC.xy).r;
+    return positionInDirLightNDC.z < depthBlockerInDirSpace + uDirLightShadowMapBias ? 1.0 : 0.0;
+}
+
+void main() {
     vec3 N = normalize(vViewSpaceNormal);
     vec3 L = uLightDirection;
     vec3 V = normalize(-vViewSpacePosition);
     vec3 H = normalize(L + V);
 
     vec4 baseColorFromTexture = SRGBtoLINEAR(texture(uBaseColorTexture, vTexCoords));
+    vec4 emissiveTexture = SRGBtoLINEAR(texture(uEmissiveTexture, vTexCoords));
     vec4 baseColor = baseColorFromTexture * uBaseColorFactor;
     vec4 metallicRougnessFromTexture = texture(uMetallicRoughnessTexture, vTexCoords);
-
-    vec4 emissiveFromTexture = SRGBtoLINEAR(texture(uEmissiveTexture, vTexCoords));
-    vec3 emissive = uEmissiveFactor * emissiveFromTexture.rgb;
-
-    vec4 occlusionFromTexture = SRGBtoLINEAR(texture(uOcclusionTexture, vTexCoords));
-
     float roughness = uRoughnessFactor * metallicRougnessFromTexture.g;
     vec3 metallic = vec3(uMetallicFactor * metallicRougnessFromTexture.b);
+    vec3 emissive = uEmissiveFactor * emissiveTexture.rgb;
 
+    vec4 occlusionFromTexture = SRGBtoLINEAR(texture(uOcclusionTexture, vTexCoords));
 
     vec3 c_diff = mix(baseColor.rgb * (1 - dielectricSpecular.r), black, metallic);
     vec3 F_0 = mix(dielectricSpecular, baseColor.rgb, metallic);
@@ -83,13 +88,11 @@ void main()
 
     float Vis = 0;
     float alpha_alpha = alpha * alpha;
-    float denumVis = (NdotL) *
-    sqrt(
-        (NdotV) * (NdotV) * (1 - alpha_alpha) + alpha_alpha
-    ) +  (NdotV) * sqrt(
-        (NdotL * NdotL) *  (1 - alpha_alpha) + alpha_alpha
+    float denumVis = (
+        (NdotL) *sqrt((NdotV) * (NdotV) * (1 - alpha_alpha) + alpha_alpha)
+        + (NdotV) * sqrt((NdotL * NdotL) *  (1 - alpha_alpha) + alpha_alpha)
     );
-    if(denumVis > 0){
+    if (denumVis > 0){
         Vis =  0.5 / (denumVis);
     }
 
@@ -107,8 +110,15 @@ void main()
     vec3 f_specular =  F * Vis * D;
     vec3 f = f_diffuse + f_specular;
 
-    fColor = (f_diffuse + f_specular)*uLightIntensity * NdotL + emissive;
+    float shadow = computeShadow();
 
-    fColor = mix(fColor, fColor * occlusionFromTexture.r, uOcclusionStrenght);
+    fColor = (
+        (f_diffuse + f_specular)
+        * max(uDirLightIntensity * NdotL * (1.0 - shadow) , uAmbLightIntensity)
+        * uLightColor
+        * shadow
+        + emissive
+    );
+//    fColor = mix(fColor, fColor * occlusionFromTexture.r, uOcclusionStrength);
     fColor = LINEARtoSRGB(fColor);
 }

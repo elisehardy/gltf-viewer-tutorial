@@ -22,23 +22,23 @@
 # The compilation target for glsl shaders is a copy in a "glsl" folder located in the executable directory, with the same file path layout
 # Recognized extensions:
 #  - *.glsl : vertex shader
-macro(c2ba_add_shader_directory src_directory dst_directory)
-    file(GLOB_RECURSE relative_files RELATIVE ${src_directory} ${src_directory}/*.glsl)
-    file(GLOB_RECURSE files ${src_directory}/*.glsl)
-
-    if(files)
-        list(LENGTH files file_count)
-        math(EXPR range_end "${file_count} - 1")
-
-        foreach(idx RANGE ${range_end})
-            list(GET files ${idx} file)
-            list(GET relative_files ${idx} relative_file)
-
-            add_custom_command(
+MACRO(C2BA_ADD_SHADER_DIRECTORY src_directory dst_directory)
+    FILE(GLOB_RECURSE relative_files RELATIVE ${src_directory} ${src_directory}/*.glsl)
+    FILE(GLOB_RECURSE files ${src_directory}/*.glsl)
+    
+    IF (files)
+        LIST(LENGTH files file_count)
+        MATH(EXPR range_end "${file_count} - 1")
+        
+        FOREACH (idx RANGE ${range_end})
+            LIST(GET files ${idx} file)
+            LIST(GET relative_files ${idx} relative_file)
+            
+            ADD_CUSTOM_COMMAND(
                 OUTPUT ${dst_directory}/${relative_file}
                 COMMAND ${CMAKE_COMMAND} -E copy ${file} ${dst_directory}/${relative_file}
                 MAIN_DEPENDENCY ${file}
             )
-        endforeach()
-    endif()
-endmacro()
+        ENDFOREACH ()
+    ENDIF ()
+ENDMACRO()
