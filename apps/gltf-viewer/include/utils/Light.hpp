@@ -11,7 +11,7 @@ namespace utils {
         GLfloat phi = 1.f;
         GLfloat theta = 0.6f;
         GLfloat dirIntensity = 1.f;
-        GLfloat ambIntensity = 0.415f;
+        GLfloat ambIntensity = 0.07f;
         glm::vec3 color = glm::vec3(1.f);
         glm::vec3 direction;
         bool fromCamera = false;

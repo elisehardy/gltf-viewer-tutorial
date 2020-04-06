@@ -116,7 +116,6 @@ void main() {
         (f_diffuse + f_specular)
         * max(uDirLightIntensity * NdotL * (1.0 - shadow) , uAmbLightIntensity)
         * uLightColor
-        * shadow
         + emissive
     );
 //    fColor = mix(fColor, fColor * occlusionFromTexture.r, uOcclusionStrength);
