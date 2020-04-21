@@ -32,4 +32,4 @@ namespace utils {
         }
     };
 }
-#endif //GLTF_VIEWER_TUTORIAL_LIGHT_HPP
+#endif // GLTF_VIEWER_TUTORIAL_LIGHT_HPP

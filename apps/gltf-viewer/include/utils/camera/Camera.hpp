@@ -53,4 +53,4 @@ namespace utils::camera {
     };
 }
 
-#endif //GLTF_VIEWER_TUTORIAL_CAMERA_HPP
+#endif // GLTF_VIEWER_TUTORIAL_CAMERA_HPP

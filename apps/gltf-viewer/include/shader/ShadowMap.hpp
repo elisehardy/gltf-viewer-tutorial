@@ -14,13 +14,15 @@ namespace shader {
         
         GLuint FBO;
         GLfloat bias;
+        GLfloat spread;
+        GLint sampleCount;
         GLuint depthMap;
         bool enabled;
         bool display;
         GLboolean modified;
         glm::mat4 viewProjectionMatrix;
         std::unique_ptr<shader::Shader> shader;
-        
+    
         ShadowMap() = default;
         
         ShadowMap(const std::string &vsPath, const std::string &fsPath);
@@ -29,4 +31,4 @@ namespace shader {
     };
 }
 
-#endif //GLTF_VIEWER_TUTORIAL_SHADOWMAP_HPP
+#endif // GLTF_VIEWER_TUTORIAL_SHADOWMAP_HPP

@@ -19,4 +19,4 @@ namespace utils::camera {
         static ViewFrame fromViewToWorldMatrix(const glm::mat4 &viewToWorldMatrix);
     };
 }
-#endif //GLTF_VIEWER_TUTORIAL_VIEWFRAME_HPP
+#endif // GLTF_VIEWER_TUTORIAL_VIEWFRAME_HPP

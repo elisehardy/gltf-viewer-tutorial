@@ -41,4 +41,4 @@ namespace utils::camera {
             virtual bool update(GLfloat elapsedTime) = 0;
     };
 }
-#endif //GLTF_VIEWER_TUTORIAL_ICAMERACONTROLLER_HPP
+#endif // GLTF_VIEWER_TUTORIAL_ICAMERACONTROLLER_HPP

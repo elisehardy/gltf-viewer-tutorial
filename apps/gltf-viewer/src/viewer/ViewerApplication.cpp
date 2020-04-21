@@ -64,6 +64,8 @@ namespace viewer {
         this->shader->addUniform("uShadowMap", shader::UNIFORM_SAMPLER2D);
         this->shader->addUniform("uShadowMapBias", shader::UNIFORM_1_F);
         this->shader->addUniform("uShadowMapEnabled", shader::UNIFORM_1_I);
+        this->shader->addUniform("uShadowMapSampleCount", shader::UNIFORM_1_I);
+        this->shader->addUniform("uShadowMapSpread", shader::UNIFORM_1_F);
         
         this->shader->addUniform("uBaseColorFactor", shader::UNIFORM_4_F);
         this->shader->addUniform("uMetallicFactor", shader::UNIFORM_1_F);
@@ -515,6 +517,8 @@ namespace viewer {
         this->shader->loadUniform("uShadowMapBias", &this->shadowMap->bias);
         this->shader->loadUniform("uShadowMap", &shadowTextureId);
         this->shader->loadUniform("uShadowMapEnabled", &shadowEnabled);
+        this->shader->loadUniform("uShadowMapSampleCount", &this->shadowMap->sampleCount);
+        this->shader->loadUniform("uShadowMapSpread", &this->shadowMap->spread);
         
         if (this->model.defaultScene >= 0) {
             std::for_each(
@@ -589,7 +593,9 @@ namespace viewer {
                 ImGui::Checkbox("Light from camera", &this->light.fromCamera);
                 ImGui::Separator();
                 ImGui::Checkbox("Enable shadow", &this->shadowMap->enabled);
-                ImGui::SliderFloat("Shadow Map Bias", &this->shadowMap->bias, 0, 0.5f);
+                ImGui::SliderFloat("Bias", &this->shadowMap->bias, 0, 0.5f);
+                ImGui::SliderFloat("Spread", &this->shadowMap->spread, 0, 0.010f);
+                ImGui::SliderInt("Sample Count", &this->shadowMap->sampleCount, 1, 100);
             }
             ImGui::End();
         }
@@ -680,6 +686,7 @@ namespace viewer {
         
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
         
         for (auto iterationCount = 0u; !this->glfwHandle.shouldClose(); ++iterationCount) {
             seconds = glfwGetTime();
