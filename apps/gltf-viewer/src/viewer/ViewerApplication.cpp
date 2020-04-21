@@ -1,5 +1,4 @@
 #include <iostream>
-#include <utility>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -33,7 +32,7 @@ namespace viewer {
         
         std::string smVertexShader = shadersRoot / DEFAULT_SM_VS;
         std::string smFragmentShader = shadersRoot / DEFAULT_SM_FS;
-        this->shadowMap = std::make_unique<shader::ShadowMap>(vertexShader, fragmentShader);
+        this->shadowMap = std::make_unique<shader::ShadowMap>(smVertexShader, smFragmentShader);
         
         this->initWhiteTexture();
         
@@ -62,9 +61,9 @@ namespace viewer {
         this->shader->addUniform("uAmbLightIntensity", shader::UNIFORM_1_F);
         this->shader->addUniform("uLightColor", shader::UNIFORM_3_F);
         
-        this->shader->addUniform("uDirLightViewProjMatrix", shader::UNIFORM_MATRIX_4F);
-        this->shader->addUniform("uDirLightShadowMap", shader::UNIFORM_SAMPLER2D);
-        this->shader->addUniform("uDirLightShadowMapBias", shader::UNIFORM_1_F);
+        this->shader->addUniform("uShadowMap", shader::UNIFORM_SAMPLER2D);
+        this->shader->addUniform("uShadowMapBias", shader::UNIFORM_1_F);
+        this->shader->addUniform("uShadowMapEnabled", shader::UNIFORM_1_I);
         
         this->shader->addUniform("uBaseColorFactor", shader::UNIFORM_4_F);
         this->shader->addUniform("uMetallicFactor", shader::UNIFORM_1_F);
@@ -93,11 +92,12 @@ namespace viewer {
         
         if (!lookatArgs.empty()) {
             
-            this->cameraController->setCamera({
-                                                      glm::vec3(lookatArgs[0], lookatArgs[1], lookatArgs[2]),
-                                                      glm::vec3(lookatArgs[3], lookatArgs[4], lookatArgs[5]),
-                                                      glm::vec3(lookatArgs[6], lookatArgs[7], lookatArgs[8])
-                                              }
+            this->cameraController->setCamera(
+                    {
+                            glm::vec3(lookatArgs[0], lookatArgs[1], lookatArgs[2]),
+                            glm::vec3(lookatArgs[3], lookatArgs[4], lookatArgs[5]),
+                            glm::vec3(lookatArgs[6], lookatArgs[7], lookatArgs[8])
+                    }
             );
         }
         else {
@@ -111,8 +111,9 @@ namespace viewer {
         }
         
         glm::ivec2 windowSize = this->glfwHandle.getSize();
-        this->projMatrix = glm::perspective(70.f, static_cast<GLfloat>(windowSize.x) / windowSize.y,
-                                            0.001f * this->sceneDiameter, 1.5f * this->sceneDiameter
+        this->projMatrix = glm::perspective(
+                70.f, static_cast<GLfloat>(windowSize.x) / windowSize.y, 0.001f * this->sceneDiameter,
+                1.5f * this->sceneDiameter
         );
     }
     
@@ -244,8 +245,10 @@ namespace viewer {
                     
                     glEnableVertexAttribArray(VERTEX_ATTRIB_POSITION);
                     glBindBuffer(GL_ARRAY_BUFFER, this->bufferObjects[bufferIndex]);
-                    glVertexAttribPointer(VERTEX_ATTRIB_POSITION, accessor.type, accessor.componentType, GL_FALSE,
-                                          bufferView.byteStride, reinterpret_cast<const GLvoid *>(byteOffset));
+                    glVertexAttribPointer(
+                            VERTEX_ATTRIB_POSITION, accessor.type, accessor.componentType, GL_FALSE,
+                            bufferView.byteStride, reinterpret_cast<const GLvoid *>(byteOffset)
+                    );
                 }
                 
                 iterator = primitive.attributes.find("NORMAL");
@@ -257,10 +260,11 @@ namespace viewer {
                     
                     glEnableVertexAttribArray(VERTEX_ATTRIB_NORMAL);
                     glBindBuffer(GL_ARRAY_BUFFER, this->bufferObjects[bufferIndex]);
-                    glVertexAttribPointer(VERTEX_ATTRIB_NORMAL, accessor.type, accessor.componentType, GL_FALSE,
-                                          bufferView.byteStride,
-                                          reinterpret_cast<const GLvoid *>(accessor.byteOffset
-                                                                           + bufferView.byteOffset));
+                    glVertexAttribPointer(
+                            VERTEX_ATTRIB_NORMAL, accessor.type, accessor.componentType, GL_FALSE,
+                            bufferView.byteStride,
+                            reinterpret_cast<const GLvoid *>(accessor.byteOffset + bufferView.byteOffset)
+                    );
                 }
                 
                 iterator = primitive.attributes.find("TEXCOORD_0");
@@ -272,10 +276,11 @@ namespace viewer {
                     
                     glEnableVertexAttribArray(VERTEX_ATTRIB_TEXTURE);
                     glBindBuffer(GL_ARRAY_BUFFER, this->bufferObjects[bufferIndex]);
-                    glVertexAttribPointer(VERTEX_ATTRIB_TEXTURE, accessor.type, accessor.componentType, GL_FALSE,
-                                          bufferView.byteStride,
-                                          reinterpret_cast<const GLvoid *>(accessor.byteOffset
-                                                                           + bufferView.byteOffset));
+                    glVertexAttribPointer(
+                            VERTEX_ATTRIB_TEXTURE, accessor.type, accessor.componentType, GL_FALSE,
+                            bufferView.byteStride,
+                            reinterpret_cast<const GLvoid *>(accessor.byteOffset + bufferView.byteOffset)
+                    );
                 }
                 
                 // Index array if defined
@@ -500,18 +505,22 @@ namespace viewer {
         this->shader->loadUniform("uLightColor", glm::value_ptr(this->light.color));
         
         const auto invViewMatrix = glm::inverse(this->cameraController->getCamera().getViewMatrix());
-        this->shader->loadUniform(
-                "uDirLightViewProjMatrix", glm::value_ptr(this->shadowMap->viewProjectionMatrix * invViewMatrix));
-        this->shader->loadUniform("uDirLightShadowMapBias", &this->shadowMap->bias);
         glActiveTexture(GL_SHADOW_TEXTURE);
         glBindTexture(GL_TEXTURE_2D, this->shadowMap->depthMap);
         GLint shadowTextureId = GL_SHADOW_TEXTURE_ID;
-        this->shader->loadUniform("uDirLightShadowMap", &shadowTextureId);
+        GLint shadowEnabled = this->shadowMap->enabled;
+        this->shader->loadUniform(
+                "uDirLightViewProjMatrix", glm::value_ptr(this->shadowMap->viewProjectionMatrix * invViewMatrix)
+        );
+        this->shader->loadUniform("uShadowMapBias", &this->shadowMap->bias);
+        this->shader->loadUniform("uShadowMap", &shadowTextureId);
+        this->shader->loadUniform("uShadowMapEnabled", &shadowEnabled);
         
         if (this->model.defaultScene >= 0) {
-            std::for_each(this->model.scenes[this->model.defaultScene].nodes.begin(),
-                          this->model.scenes[this->model.defaultScene].nodes.end(),
-                          [this](uint32_t i) { this->drawNode(i, glm::mat4(1)); }
+            std::for_each(
+                    this->model.scenes[this->model.defaultScene].nodes.begin(),
+                    this->model.scenes[this->model.defaultScene].nodes.end(),
+                    [this](uint32_t i) { this->drawNode(i, glm::mat4(1)); }
             );
         }
         
@@ -577,8 +586,10 @@ namespace viewer {
                 ImGui::SliderFloat("Directional Light Intensity", &this->light.dirIntensity, 0, 1.f);
                 ImGui::SliderFloat("Ambient Light Intensity", &this->light.ambIntensity, 0, 1.f);
                 ImGui::ColorEdit3("color", reinterpret_cast<float *>(&this->light.color));
-                ImGui::SliderFloat("Shadow Map Bias", &this->shadowMap->bias, 0, 5.f);
                 ImGui::Checkbox("Light from camera", &this->light.fromCamera);
+                ImGui::Separator();
+                ImGui::Checkbox("Enable shadow", &this->shadowMap->enabled);
+                ImGui::SliderFloat("Shadow Map Bias", &this->shadowMap->bias, 0, 0.5f);
             }
             ImGui::End();
         }
@@ -601,6 +612,7 @@ namespace viewer {
         
         if (node.mesh >= 0) {
             glm::mat4 MVPMatrix = this->shadowMap->viewProjectionMatrix * modelMatrix;
+            
             this->shadowMap->shader->loadUniform("uMVPMatrix", glm::value_ptr(MVPMatrix));
             
             VaoRange vaoRange = meshToVertexArrays[node.mesh];
@@ -608,7 +620,6 @@ namespace viewer {
             for (uint32_t i = 0; i < mesh.primitives.size(); ++i) {
                 GLuint vao = vertexArrayObjects[vaoRange.begin + i];
                 tinygltf::Primitive primitive = mesh.primitives[i];
-                bindMaterial(primitive.material);
                 
                 glBindVertexArray(vao);
                 if (primitive.indices >= 0) {
@@ -628,7 +639,7 @@ namespace viewer {
         
         // Draw children
         std::for_each(node.children.begin(), node.children.end(),
-                      [this, &modelMatrix](uint32_t i) { this->drawNode(i, modelMatrix); }
+                      [this, &modelMatrix](uint32_t i) { this->drawNodeShadowMap(i, modelMatrix); }
         );
     }
     
@@ -646,6 +657,7 @@ namespace viewer {
         this->shadowMap->viewProjectionMatrix = dirLightProjMatrix * dirLightViewMatrix;
         
         this->shadowMap->shader->use();
+        glCullFace(GL_FRONT);
         glViewport(0, 0, shader::ShadowMap::SHADOW_MAP_RESOLUTION, shader::ShadowMap::SHADOW_MAP_RESOLUTION);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->shadowMap->FBO);
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -656,6 +668,7 @@ namespace viewer {
             );
         }
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glCullFace(GL_BACK);
         this->shadowMap->shader->stop();
         
         this->shadowMap->modified = false;
@@ -665,12 +678,13 @@ namespace viewer {
     int ViewerApplication::run() {
         double seconds, ellapsedTime;
         
+        glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
         
         for (auto iterationCount = 0u; !this->glfwHandle.shouldClose(); ++iterationCount) {
             seconds = glfwGetTime();
             
-            if (this->shadowMap->modified) {
+            if (this->shadowMap->enabled && this->shadowMap->modified) {
                 this->computeShadowMap();
             }
             

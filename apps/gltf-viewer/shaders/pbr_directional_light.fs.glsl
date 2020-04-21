@@ -10,9 +10,10 @@ uniform float uAmbLightIntensity;
 uniform vec3 uLightDirection;
 uniform vec3 uLightColor;
 
+uniform bool uShadowMapEnabled;
 uniform mat4 uDirLightViewProjMatrix;
-uniform sampler2D uDirLightShadowMap;
-uniform float uDirLightShadowMapBias;
+uniform sampler2D uShadowMap;
+uniform float uShadowMapBias;
 
 uniform vec3 uEmissiveFactor;
 uniform float uMetallicFactor;
@@ -52,10 +53,19 @@ vec4 SRGBtoLINEAR(vec4 srgbIn) {
 }
 
 float computeShadow() {
-    vec4 positionInDirLightScreen = uDirLightViewProjMatrix * vec4(vViewSpacePosition, 1);
-    vec3 positionInDirLightNDC = vec3(positionInDirLightScreen / positionInDirLightScreen.w) * 0.5 + 0.5;
-    float depthBlockerInDirSpace = texture(uDirLightShadowMap, positionInDirLightNDC.xy).r;
-    return positionInDirLightNDC.z < depthBlockerInDirSpace + uDirLightShadowMapBias ? 1.0 : 0.0;
+    float shadow = 0.f;
+    vec2 texelSize = 1.0 / textureSize(uShadowMap, 0);
+    for(int x = -2; x <= 2; ++x) {
+        for (int y = -2; y <= 2; ++y) {
+            vec4 positionInDirLightScreen = uDirLightViewProjMatrix * vec4(vViewSpacePosition, 1);
+            vec3 positionInDirLightNDC = vec3(positionInDirLightScreen / positionInDirLightScreen.w) * 0.5 + 0.5;
+            float depthBlockerInDirSpace = texture(uShadowMap, positionInDirLightNDC.xy + vec2(x, y) * texelSize).r;
+
+            shadow += positionInDirLightNDC.z < depthBlockerInDirSpace + uShadowMapBias ? 1.0 : 0.0;
+        }
+    }
+
+    return shadow / 25.f;
 }
 
 void main() {
@@ -110,7 +120,7 @@ void main() {
     vec3 f_specular =  F * Vis * D;
     vec3 f = f_diffuse + f_specular;
 
-    float shadow = computeShadow();
+    float shadow = uShadowMapEnabled ? computeShadow() : 0.f;
 
     fColor = (
         (f_diffuse + f_specular)
