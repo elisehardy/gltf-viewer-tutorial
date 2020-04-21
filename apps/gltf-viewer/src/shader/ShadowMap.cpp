@@ -4,7 +4,7 @@
 namespace shader {
     
     ShadowMap::ShadowMap(const std::string &vsPath, const std::string &fsPath) :
-            bias(0.05f), spread(0.001f), sampleCount(32), enabled(true), display(false), modified(true) {
+            bias(0.00f), spread(0.001f), sampleCount(16), enabled(true), display(false), modified(true) {
         glGenFramebuffers(1, &this->FBO);
         glGenTextures(1, &this->depthMap);
         

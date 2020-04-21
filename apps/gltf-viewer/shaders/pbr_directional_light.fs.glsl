@@ -11,6 +11,7 @@ uniform vec3 uLightDirection;
 uniform vec3 uLightColor;
 
 uniform bool uShadowMapEnabled;
+
 uniform mat4 uDirLightViewProjMatrix;
 uniform sampler2DShadow uShadowMap;
 uniform float uShadowMapBias;
@@ -125,8 +126,8 @@ void main() {
     float Vis = 0;
     float alpha_alpha = alpha * alpha;
     float denumVis = (
-    (NdotL) *sqrt((NdotV) * (NdotV) * (1 - alpha_alpha) + alpha_alpha)
-    + (NdotV) * sqrt((NdotL * NdotL) *  (1 - alpha_alpha) + alpha_alpha)
+        (NdotL) *sqrt((NdotV) * (NdotV) * (1 - alpha_alpha) + alpha_alpha)
+        + (NdotV) * sqrt((NdotL * NdotL) *  (1 - alpha_alpha) + alpha_alpha)
     );
     if (denumVis > 0){
         Vis =  0.5 / (denumVis);
@@ -150,10 +151,10 @@ void main() {
 
     fColor = (
         (f_diffuse + f_specular)
-        * max(uDirLightIntensity * NdotL * (1.0 - shadow), uAmbLightIntensity)
+        * max(uDirLightIntensity * NdotL * shadow, uAmbLightIntensity)
         * uLightColor
         + emissive
     );
-    //    fColor = mix(fColor, fColor * occlusionFromTexture.r, uOcclusionStrength);
+//    fColor = mix(fColor, fColor * occlusionFromTexture.r, uOcclusionStrength);
     fColor = LINEARtoSRGB(fColor);
 }

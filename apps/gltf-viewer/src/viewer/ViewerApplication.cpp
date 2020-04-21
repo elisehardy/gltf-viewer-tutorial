@@ -651,13 +651,13 @@ namespace viewer {
     
     
     void ViewerApplication::computeShadowMap() {
+        GLfloat sceneRadius = this->sceneDiameter / 2.f;
         const glm::vec3 dirLightUpVector = computeDirectionVectorUp(this->light.phi, this->light.theta);
         const glm::mat4 dirLightViewMatrix = glm::lookAt(
-                this->sceneCenter + this->light.direction * this->sceneDiameter, this->sceneCenter, dirLightUpVector
+                this->sceneCenter + this->light.direction * sceneRadius, this->sceneCenter, dirLightUpVector
         );
         const glm::mat4 dirLightProjMatrix = glm::ortho(
-                -this->sceneDiameter, this->sceneDiameter, -this->sceneDiameter, this->sceneDiameter,
-                0.01f * this->sceneDiameter, 2.f * this->sceneDiameter
+                -sceneRadius, sceneRadius, -sceneRadius, sceneRadius, 0.01f * sceneRadius, 2.f * sceneRadius
         );
         
         this->shadowMap->viewProjectionMatrix = dirLightProjMatrix * dirLightViewMatrix;
