@@ -1,9 +1,11 @@
 #include <shader/ShadowMap.hpp>
+#include <utils/QuadScreen.hpp>
 
 
 namespace shader {
     
-    ShadowMap::ShadowMap(const std::string &vsPath, const std::string &fsPath) :
+    ShadowMap::ShadowMap(const std::string &computeVsPath, const std::string &computeFsPath,
+                         const std::string &displayVsPath, const std::string &displayFsPath) :
             bias(0.00f), spread(0.001f), sampleCount(16), enabled(true), display(false), modified(true) {
         glGenFramebuffers(1, &this->FBO);
         glGenTextures(1, &this->depthMap);
@@ -26,13 +28,25 @@ namespace shader {
         glReadBuffer(GL_NONE);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         
-        this->shader = std::make_unique<shader::Shader>(vsPath, fsPath);
-        this->shader->addUniform("uMVPMatrix", shader::UNIFORM_MATRIX_4F);
+        this->computeShader = std::make_unique<shader::Shader>(computeVsPath, computeFsPath);
+        this->computeShader->addUniform("uMVPMatrix", shader::UNIFORM_MATRIX_4F);
+        
+        this->displayShader = std::make_unique<shader::Shader>(displayVsPath, displayFsPath);
+        this->computeShader->addUniform("uTex", shader::UNIFORM_SAMPLER2D);
     }
     
     
     ShadowMap::~ShadowMap() {
         glDeleteTextures(1, &this->depthMap);
         glDeleteFramebuffers(1, &this->FBO);
+    }
+    
+    void ShadowMap::render() {
+        this->displayShader->use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, this->depthMap);
+        utils::QuadScreen::getInstance()->render();
+        glBindTexture(GL_TEXTURE_2D, 0);
+        this->displayShader->stop();
     }
 }

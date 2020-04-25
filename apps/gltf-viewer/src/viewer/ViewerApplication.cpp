@@ -22,7 +22,7 @@ namespace viewer {
     ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width, uint32_t height, fs::path glTFFile,
                                          const std::vector<GLfloat> &lookatArgs, std::string vertexShader,
                                          std::string fragmentShader) :
-            glfwHandle(width, height, "glTF Viewer") {
+            glfwHandle(width, height, "glTF Viewer"), displaySM(false) {
         
         std::string appName = appPath.stem().string();
         fs::path shadersRoot = appPath.parent_path() / "shaders" / appName;
@@ -30,9 +30,13 @@ namespace viewer {
         fragmentShader = shadersRoot / (fragmentShader.empty() ? DEFAULT_FS : fragmentShader);
         this->initshader(vertexShader, fragmentShader);
         
-        std::string smVertexShader = shadersRoot / DEFAULT_SM_VS;
-        std::string smFragmentShader = shadersRoot / DEFAULT_SM_FS;
-        this->shadowMap = std::make_unique<shader::ShadowMap>(smVertexShader, smFragmentShader);
+        std::string smComputeVertexShader = shadersRoot / DEFAULT_SM_COMPUTE_VS;
+        std::string smComputeFragmentShader = shadersRoot / DEFAULT_SM_COMPUTE_FS;
+        std::string smDisplayVertexShader = shadersRoot / DEFAULT_SM_DISPLAY_VS;
+        std::string smDisplayFragmentShader = shadersRoot / DEFAULT_SM_DISPLAY_FS;
+        this->shadowMap = std::make_unique<shader::ShadowMap>(
+                smComputeVertexShader, smComputeFragmentShader, smDisplayVertexShader, smDisplayFragmentShader
+        );
         
         this->initWhiteTexture();
         
@@ -114,8 +118,8 @@ namespace viewer {
         
         glm::ivec2 windowSize = this->glfwHandle.getSize();
         this->projMatrix = glm::perspective(
-                70.f, static_cast<GLfloat>(windowSize.x) / windowSize.y, 0.001f * this->sceneDiameter,
-                1.5f * this->sceneDiameter
+                70.f, static_cast<GLfloat>(windowSize.x) / static_cast<GLfloat>( windowSize.y),
+                0.001f * this->sceneDiameter, 1.5f * this->sceneDiameter
         );
     }
     
@@ -487,10 +491,6 @@ namespace viewer {
     
     
     void ViewerApplication::drawScene() {
-        glm::ivec2 windowSize = this->glfwHandle.getSize();
-        glViewport(0, 0, windowSize.x, windowSize.y);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
         glm::mat4 viewMatrix = this->cameraController->getCamera().getViewMatrix();
         
         this->shader->use();
@@ -592,6 +592,7 @@ namespace viewer {
                 ImGui::ColorEdit3("color", reinterpret_cast<float *>(&this->light.color));
                 ImGui::Checkbox("Light from camera", &this->light.fromCamera);
                 ImGui::Separator();
+                ImGui::Checkbox("Display shadow map", &this->displaySM);
                 ImGui::Checkbox("Enable shadow", &this->shadowMap->enabled);
                 ImGui::SliderFloat("Bias", &this->shadowMap->bias, 0, 0.5f);
                 ImGui::SliderFloat("Spread", &this->shadowMap->spread, 0, 0.010f);
@@ -619,7 +620,7 @@ namespace viewer {
         if (node.mesh >= 0) {
             glm::mat4 MVPMatrix = this->shadowMap->viewProjectionMatrix * modelMatrix;
             
-            this->shadowMap->shader->loadUniform("uMVPMatrix", glm::value_ptr(MVPMatrix));
+            this->shadowMap->computeShader->loadUniform("uMVPMatrix", glm::value_ptr(MVPMatrix));
             
             VaoRange vaoRange = meshToVertexArrays[node.mesh];
             tinygltf::Mesh mesh = model.meshes[node.mesh];
@@ -662,7 +663,7 @@ namespace viewer {
         
         this->shadowMap->viewProjectionMatrix = dirLightProjMatrix * dirLightViewMatrix;
         
-        this->shadowMap->shader->use();
+        this->shadowMap->computeShader->use();
         glCullFace(GL_FRONT);
         glViewport(0, 0, shader::ShadowMap::SHADOW_MAP_RESOLUTION, shader::ShadowMap::SHADOW_MAP_RESOLUTION);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->shadowMap->FBO);
@@ -675,7 +676,7 @@ namespace viewer {
         }
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         glCullFace(GL_BACK);
-        this->shadowMap->shader->stop();
+        this->shadowMap->computeShader->stop();
         
         this->shadowMap->modified = false;
     }
@@ -683,9 +684,9 @@ namespace viewer {
     
     int ViewerApplication::run() {
         double seconds, ellapsedTime;
+        glm::ivec2 windowSize = this->glfwHandle.getSize();
         
         glEnable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         
         for (auto iterationCount = 0u; !this->glfwHandle.shouldClose(); ++iterationCount) {
@@ -695,7 +696,18 @@ namespace viewer {
                 this->computeShadowMap();
             }
             
-            this->drawScene();
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glViewport(0, 0, windowSize.x, windowSize.y);
+            
+            if (displaySM) {
+                glDisable(GL_DEPTH_TEST);
+                this->shadowMap->render();
+            }
+            else {
+                glEnable(GL_DEPTH_TEST);
+                this->drawScene();
+            }
+            
             this->drawImGUI();
             
             glfwPollEvents();

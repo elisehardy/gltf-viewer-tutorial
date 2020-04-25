@@ -1,4 +1,4 @@
-#ifndef GLTF_VIEWER_TUTORIAL_SHADOWMAP_HPPaPos
+#ifndef GLTF_VIEWER_TUTORIAL_SHADOWMAP_HPP
 #define GLTF_VIEWER_TUTORIAL_SHADOWMAP_HPP
 
 #include <glad/glad.h>
@@ -21,13 +21,17 @@ namespace shader {
         bool display;
         GLboolean modified;
         glm::mat4 viewProjectionMatrix;
-        std::unique_ptr<shader::Shader> shader;
-    
+        std::unique_ptr<shader::Shader> computeShader;
+        std::unique_ptr<shader::Shader> displayShader;
+        
         ShadowMap() = default;
         
-        ShadowMap(const std::string &vsPath, const std::string &fsPath);
+        ShadowMap(const std::string &computeVsPath, const std::string &computeFsPath, const std::string &displayVsPath,
+                  const std::string &displayFsPath);
         
         ~ShadowMap();
+    
+        void render();
     };
 }
 

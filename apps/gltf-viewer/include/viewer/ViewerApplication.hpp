@@ -48,8 +48,10 @@ namespace viewer {
             static constexpr char DEFAULT_VS[] = "forward.vs.glsl";
             static constexpr char DEFAULT_FS[] = "pbr_directional_light.fs.glsl";
             
-            static constexpr char DEFAULT_SM_VS[] = "directionalSM.vs.glsl";
-            static constexpr char DEFAULT_SM_FS[] = "directionalSM.fs.glsl";
+            static constexpr char DEFAULT_SM_COMPUTE_VS[] = "directionalSM.vs.glsl";
+            static constexpr char DEFAULT_SM_COMPUTE_FS[] = "directionalSM.fs.glsl";
+            static constexpr char DEFAULT_SM_DISPLAY_VS[] = "quadscreen.vs.glsl";
+            static constexpr char DEFAULT_SM_DISPLAY_FS[] = "quadscreen.fs.glsl";
             
             static constexpr int32_t DEFAULT_WINDOW_WIDTH = 1024;
             static constexpr int32_t DEFAULT_WINDOW_HEIGHT = 768;
@@ -70,6 +72,8 @@ namespace viewer {
             glm::mat4 projMatrix;
             GLfloat sceneDiameter;
             glm::vec3 sceneCenter;
+            
+            bool displaySM;
         
         private:
             
