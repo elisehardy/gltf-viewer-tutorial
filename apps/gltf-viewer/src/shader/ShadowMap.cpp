@@ -53,8 +53,8 @@ namespace shader {
     void ShadowMap::render() {
         this->displayShader->use();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, this->depthMap);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, this->depthMap);
 //        GLfloat *data;
 //        data = new GLfloat[shader::ShadowMap::SHADOW_MAP_RESOLUTION * shader::ShadowMap::SHADOW_MAP_RESOLUTION];
 //        glGetTexImage(
