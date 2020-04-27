@@ -592,8 +592,8 @@ namespace viewer {
                 ImGui::ColorEdit3("color", reinterpret_cast<float *>(&this->light.color));
                 ImGui::Checkbox("Light from camera", &this->light.fromCamera);
                 ImGui::Separator();
-                ImGui::Checkbox("Display shadow map", &this->displaySM);
                 ImGui::Checkbox("Enable shadow", &this->shadowMap->enabled);
+                ImGui::Checkbox("Display shadow map", &this->displaySM);
                 ImGui::SliderFloat("Bias", &this->shadowMap->bias, 0, 0.5f);
                 ImGui::SliderFloat("Spread", &this->shadowMap->spread, 0, 0.010f);
                 ImGui::SliderInt("Sample Count", &this->shadowMap->sampleCount, 1, 100);
