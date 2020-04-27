@@ -597,6 +597,9 @@ namespace viewer {
                 ImGui::SliderFloat("Bias", &this->shadowMap->bias, 0, 0.5f);
                 ImGui::SliderFloat("Spread", &this->shadowMap->spread, 0, 0.010f);
                 ImGui::SliderInt("Sample Count", &this->shadowMap->sampleCount, 1, 100);
+                if (ImGui::SliderInt("Resolution", &this->shadowMap->resolution, 32, 4096)) {
+                    this->shadowMap->modified = true;
+                }
             }
             ImGui::End();
         }
@@ -665,13 +668,14 @@ namespace viewer {
         
         this->shadowMap->computeShader->use();
         glCullFace(GL_FRONT);
-        glViewport(0, 0, shader::ShadowMap::SHADOW_MAP_RESOLUTION, shader::ShadowMap::SHADOW_MAP_RESOLUTION);
+        glViewport(0, 0, this->shadowMap->resolution, this->shadowMap->resolution);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->shadowMap->FBO);
         glClear(GL_DEPTH_BUFFER_BIT);
         if (this->model.defaultScene >= 0) {
-            std::for_each(this->model.scenes[this->model.defaultScene].nodes.begin(),
-                          this->model.scenes[this->model.defaultScene].nodes.end(),
-                          [this](uint32_t i) { this->drawNodeShadowMap(i, glm::mat4(1)); }
+            std::for_each(
+                    this->model.scenes[this->model.defaultScene].nodes.begin(),
+                    this->model.scenes[this->model.defaultScene].nodes.end(),
+                    [this](uint32_t i) { this->drawNodeShadowMap(i, glm::mat4(1)); }
             );
         }
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -689,7 +693,12 @@ namespace viewer {
         for (auto iterationCount = 0u; !this->glfwHandle.shouldClose(); ++iterationCount) {
             seconds = glfwGetTime();
             
+            if (this->shadowMap->enabled && this->shadowMap->modifiedResolution) {
+                this->shadowMap->regenTexture();
+            }
             if (this->shadowMap->enabled && this->shadowMap->modified) {
+                glEnable(GL_DEPTH_TEST);
+                glEnable(GL_CULL_FACE);
                 this->computeShadowMap();
             }
             

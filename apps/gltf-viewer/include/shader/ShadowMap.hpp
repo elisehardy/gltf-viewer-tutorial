@@ -10,8 +10,7 @@
 namespace shader {
     
     struct ShadowMap {
-        static constexpr int32_t SHADOW_MAP_RESOLUTION = 4096;
-        
+        GLint resolution;
         GLuint FBO;
         GLuint depthMap;
         GLuint sampler;
@@ -21,6 +20,7 @@ namespace shader {
         bool enabled;
         bool display;
         GLboolean modified;
+        GLboolean modifiedResolution;
         glm::mat4 viewProjectionMatrix;
         std::unique_ptr<shader::Shader> computeShader;
         std::unique_ptr<shader::Shader> displayShader;
@@ -32,6 +32,8 @@ namespace shader {
         
         ~ShadowMap();
     
+        void regenTexture();
+        
         void render();
     };
 }
