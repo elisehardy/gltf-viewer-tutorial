@@ -686,9 +686,6 @@ namespace viewer {
         double seconds, ellapsedTime;
         glm::ivec2 windowSize = this->glfwHandle.getSize();
         
-        glEnable(GL_CULL_FACE);
-        glDepthFunc(GL_LEQUAL);
-        
         for (auto iterationCount = 0u; !this->glfwHandle.shouldClose(); ++iterationCount) {
             seconds = glfwGetTime();
             
@@ -701,10 +698,12 @@ namespace viewer {
             
             if (displaySM) {
                 glDisable(GL_DEPTH_TEST);
+                glDisable(GL_CULL_FACE);
                 this->shadowMap->render();
             }
             else {
                 glEnable(GL_DEPTH_TEST);
+                glEnable(GL_CULL_FACE);
                 this->drawScene();
             }
             

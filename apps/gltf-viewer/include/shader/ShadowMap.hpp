@@ -13,10 +13,11 @@ namespace shader {
         static constexpr int32_t SHADOW_MAP_RESOLUTION = 4096;
         
         GLuint FBO;
+        GLuint depthMap;
+        GLuint sampler;
         GLfloat bias;
         GLfloat spread;
         GLint sampleCount;
-        GLuint depthMap;
         bool enabled;
         bool display;
         GLboolean modified;

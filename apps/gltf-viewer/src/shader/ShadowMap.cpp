@@ -1,5 +1,6 @@
 #include <shader/ShadowMap.hpp>
 #include <utils/QuadScreen.hpp>
+#include <iostream>
 
 
 namespace shader {
@@ -27,12 +28,12 @@ namespace shader {
         glDrawBuffer(GL_NONE);
         glReadBuffer(GL_NONE);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
         
         this->computeShader = std::make_unique<shader::Shader>(computeVsPath, computeFsPath);
         this->computeShader->addUniform("uMVPMatrix", shader::UNIFORM_MATRIX_4F);
         
         this->displayShader = std::make_unique<shader::Shader>(displayVsPath, displayFsPath);
-        this->computeShader->addUniform("uTex", shader::UNIFORM_SAMPLER2D);
     }
     
     
@@ -41,11 +42,33 @@ namespace shader {
         glDeleteFramebuffers(1, &this->FBO);
     }
     
+    
+    static float linearize_depth(float d) {
+        float zNear = 0.01f * 18.5479f, zFar = 2.f * 18.5479f;
+        float z_n = 2.0f * d - 1.0f;
+        return 2.0f * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
+    }
+    
+    
     void ShadowMap::render() {
         this->displayShader->use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, this->depthMap);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, this->depthMap);
+//        GLfloat *data;
+//        data = new GLfloat[shader::ShadowMap::SHADOW_MAP_RESOLUTION * shader::ShadowMap::SHADOW_MAP_RESOLUTION];
+//        glGetTexImage(
+//                GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data
+//        );
+//        for (int x = 0; x < shader::ShadowMap::SHADOW_MAP_RESOLUTION; x++) {
+//            for (int y = 0; y < shader::ShadowMap::SHADOW_MAP_RESOLUTION; y++) {
+//                std::cout << data[x * shader::ShadowMap::SHADOW_MAP_RESOLUTION + y] << " ";
+//            }
+//            std::cout << std::endl;
+//        }
+        
         utils::QuadScreen::getInstance()->render();
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
         glBindTexture(GL_TEXTURE_2D, 0);
         this->displayShader->stop();
     }
